@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Bike Assistant</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        #chatbox { height: 400px; border: 1px solid #ccc; overflow-y: scroll; margin-bottom: 10px; padding: 10px; }
+        #question { width: 70%; padding: 5px; }
+        #submit { padding: 5px 10px; }
+        .chain-of-thought { font-style: italic; color: #666; margin-top: 5px; }
+    </style>
+</head>
+<body>
+<h1>AI Bike Assistant</h1>
+<div id="chatbox"></div>
+<input type="text" id="question" placeholder="Ask a question about a bike...">
+<button id="submit">Send</button>
+
+<script>
+    const chatbox = document.getElementById('chatbox');
+    const questionInput = document.getElementById('question');
+    const submitButton = document.getElementById('submit');
+    let conversationHistory = [];
+
+    function addMessage(sender, message, chainOfThought = null) {
+        const messageElement = document.createElement('div');
+        messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
+        if (chainOfThought) {
+            messageElement.innerHTML += `<div class="chain-of-thought">Chain of Thought: ${chainOfThought}</div>`;
+        }
+        chatbox.appendChild(messageElement);
+        chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    async function askQuestion() {
+        const question = questionInput.value.trim();
+        if (!question) return;
+
+        addMessage('You', question);
+        questionInput.value = '';
+
+        try {
+            const response = await fetch('/ask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ question, history: conversationHistory }),
+            });
+            const data = await response.json();
+            addMessage('AI', data.answer, data.chainOfThought);
+
+            // Update conversation history
+            conversationHistory.push({ user: question });
+            conversationHistory.push({ assistant: data.answer });
+        } catch (error) {
+            console.error('Error:', error);
+            addMessage('System', 'An error occurred while fetching the response.');
+        }
+    }
+
+    submitButton.addEventListener('click', askQuestion);
+    questionInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') askQuestion();
+    });
+</script>
+</body>
+</html>

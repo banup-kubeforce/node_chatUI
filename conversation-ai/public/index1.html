@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        #chatbox { height: 300px; border: 1px solid #ccc; overflow-y: scroll; margin-bottom: 10px; padding: 10px; }
+        #question { width: 70%; padding: 5px; }
+        #submit { padding: 5px 10px; }
+    </style>
+</head>
+<body>
+<h1>AI Chatbot</h1>
+<div id="chatbox"></div>
+<input type="text" id="question" placeholder="Ask a question...">
+<button id="submit">Send</button>
+
+<script>
+    const chatbox = document.getElementById('chatbox');
+    const questionInput = document.getElementById('question');
+    const submitButton = document.getElementById('submit');
+
+    function addMessage(sender, message) {
+        const messageElement = document.createElement('p');
+        messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
+        chatbox.appendChild(messageElement);
+        chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    async function askQuestion() {
+        const question = questionInput.value.trim();
+        if (!question) return;
+
+        addMessage('You', question);
+        questionInput.value = '';
+
+        try {
+            const response = await fetch(`/ask?question=${encodeURIComponent(question)}`);
+            const data = await response.json();
+            addMessage('AI', data.answer);
+        } catch (error) {
+            console.error('Error:', error);
+            addMessage('System', 'An error occurred while fetching the response.');
+        }
+    }
+
+    submitButton.addEventListener('click', askQuestion);
+    questionInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') askQuestion();
+    });
+</script>
+</body>
+</html>

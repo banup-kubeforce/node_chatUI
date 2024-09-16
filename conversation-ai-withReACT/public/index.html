@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Bike Assistant (ReACT)</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        #chatbox { height: 400px; border: 1px solid #ccc; overflow-y: scroll; margin-bottom: 10px; padding: 10px; }
+        #question { width: 70%; padding: 5px; }
+        #submit { padding: 5px 10px; }
+        .thought { color: #0000FF; }
+        .action { color: #008000; }
+        .observation { color: #800080; }
+        .conclusion { font-weight: bold; }
+    </style>
+</head>
+<body>
+<h1>AI Bike Assistant (ReACT)</h1>
+<div id="chatbox"></div>
+<input type="text" id="question" placeholder="Ask a question about a bike...">
+<button id="submit">Send</button>
+
+<script>
+    const chatbox = document.getElementById('chatbox');
+    const questionInput = document.getElementById('question');
+    const submitButton = document.getElementById('submit');
+    let conversationHistory = [];
+
+    function addMessage(sender, message) {
+        const messageElement = document.createElement('div');
+        messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
+        chatbox.appendChild(messageElement);
+        chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    function addReactResponse(response) {
+        const responseElement = document.createElement('div');
+        responseElement.innerHTML = '<strong>AI:</strong>';
+
+        response.thoughts.forEach((thought, index) => {
+            responseElement.innerHTML += `<p class="thought">Thought ${index + 1}: ${thought}</p>`;
+            if (response.actions[index]) {
+                responseElement.innerHTML += `<p class="action">Action ${index + 1}: ${response.actions[index]}</p>`;
+            }
+            if (response.observations[index]) {
+                responseElement.innerHTML += `<p class="observation">Observation ${index + 1}: ${response.observations[index]}</p>`;
+            }
+        });
+
+        responseElement.innerHTML += `<p class="conclusion">Conclusion: ${response.conclusion}</p>`;
+
+        chatbox.appendChild(responseElement);
+        chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    async function askQuestion() {
+        const question = questionInput.value.trim();
+        if (!question) return;
+
+        addMessage('You', question);
+        questionInput.value = '';
+
+        try {
+            const response = await fetch('/ask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ question, history: conversationHistory }),
+            });
+            const data = await response.json();
+            addReactResponse(data);
+
+            // Update conversation history
+            conversationHistory.push({ user: question });
+            conversationHistory.push({ assistant: data.conclusion });
+        } catch (error) {
+            console.error('Error:', error);
+            addMessage('System', 'An error occurred while fetching the response.');
+        }
+    }
+
+    submitButton.addEventListener('click', askQuestion);
+    questionInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') askQuestion();
+    });
+</script>
+</body>
+</html>
